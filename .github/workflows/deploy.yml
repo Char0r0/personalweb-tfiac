@@ -1,0 +1,43 @@
+name: Deploy Website
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Infrastructure Repo
+        uses: actions/checkout@v3
+        
+      - name: Checkout Website Repo
+        uses: actions/checkout@v3
+        with:
+          repository: your-username/your-website-repo  # 替换为你的网站代码仓库
+          path: website  # 这会将网站代码检出到 'website' 目录
+          token: ${{ secrets.PAT_TOKEN }}  # 如果是私有仓库需要这个
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/personal-website-deployment-role
+          aws-region: ap-southeast-2
+
+      - name: Build and Deploy Website
+        working-directory: website  # 切换到网站代码目录
+        run: |
+          npm install
+          npm run build
+          aws s3 sync build/ s3://personal-website-prod
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*" 

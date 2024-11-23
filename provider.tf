@@ -1,20 +1,21 @@
 terraform {
   required_providers {
     aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
+      source = "hashicorp/aws"
+      version = "5.59.0"
     }
   }
 }
+provider "aws" {
+  region = "ap-southeast-2" # Choose the region you want
+}
 
 provider "aws" {
-  region = var.aws_region
-  
-  default_tags {
-    tags = {
-      Environment = var.environment
-      Project     = var.project_name
-      Terraform   = "true"
-    }
-  }
+  alias  = "us_east_1"
+  region = "us-east-1"
+}
+
+provider "aws" {
+  alias  = "backup_region"
+  region = "us-west-1"  # 或其他你想要的备份区域
 }
