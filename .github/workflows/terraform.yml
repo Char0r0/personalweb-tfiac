@@ -29,6 +29,18 @@ jobs:
         with:
           terraform_version: 1.5.0
 
+      - name: Create tfvars file
+        run: |
+          cat > personal_website.tfvars << EOF
+          aws_region = "${{ secrets.AWS_REGION }}"
+          environment = "${{ secrets.ENVIRONMENT }}"
+          project_name = "${{ secrets.PROJECT_NAME }}"
+          domain_name = "${{ secrets.DOMAIN_NAME }}"
+          domain_aliases = ["www", "api"]
+          github_repo = "${{ github.repository }}"
+          alert_email = "${{ secrets.ALERT_EMAIL }}"
+          EOF
+
       - name: Terraform Format
         run: terraform fmt -check
 
@@ -38,7 +50,6 @@ jobs:
       - name: Terraform Plan
         if: github.event_name == 'pull_request'
         run: terraform plan -var-file="personal_website.tfvars"
-        continue-on-error: true
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
