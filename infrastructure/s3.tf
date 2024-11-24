@@ -10,6 +10,32 @@ resource "aws_s3_bucket" "personal_website" {
   }
 }
 
+# CORS configuration
+resource "aws_s3_bucket_cors_configuration" "personal_website" {
+  bucket = aws_s3_bucket.personal_website.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET"]
+    allowed_origins = ["https://${var.personal_website_s3_domain_name}"]
+    max_age_seconds = 3000
+  }
+}
+
+# Lifecycle rule configuration
+resource "aws_s3_bucket_lifecycle_configuration" "personal_website" {
+  bucket = aws_s3_bucket.personal_website.id
+
+  rule {
+    id      = "cleanup_old_versions"
+    status  = "Enabled"
+
+    noncurrent_version_expiration {
+      noncurrent_days = 30
+    }
+  }
+}
+
 # Unblock public access to the bucket (AWS requirements)
 resource "aws_s3_bucket_public_access_block" "personal_website" {
   bucket = aws_s3_bucket.personal_website.id

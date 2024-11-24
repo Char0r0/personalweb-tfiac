@@ -32,6 +32,10 @@ resource "aws_cloudfront_distribution" "personal_website_api_distribution" {
                 forward = "none"
             }
         }
+
+        min_ttl = 0
+        default_ttl = 3600
+        max_ttl = 86400
     }
 
     price_class = "PriceClass_100"
@@ -57,11 +61,13 @@ resource "aws_cloudfront_distribution" "personal_website_api_distribution" {
     }
 
     tags = {
-      Name = "personal-website-CloudFront-distribution"
+      Name = "personal-website-distribution"
+      Environment = var.environment
+      Project = var.project_name
     }
 
     viewer_certificate {
-        acm_certificate_arn = var.pw_acm_certificate_arn
+        acm_certificate_arn = aws_acm_certificate.personal_website_cert.arn
         minimum_protocol_version = "TLSv1.2_2021"
         ssl_support_method = "sni-only"
     }

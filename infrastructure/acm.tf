@@ -1,7 +1,7 @@
 resource "aws_acm_certificate" "personal_website_cert" {
   provider                  = aws.us-east-1
   domain_name              = var.personal_website_s3_domain_name
-  subject_alternative_names = var.domain_aliases
+  subject_alternative_names = [for subdomain in var.domain_aliases : "${subdomain}.${var.personal_website_s3_domain_name}"]
   validation_method        = "DNS"
 
   tags = {

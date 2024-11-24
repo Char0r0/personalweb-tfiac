@@ -1,3 +1,13 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+      configuration_aliases = [ aws.us-east-1, aws.backup_region ]
+    }
+  }
+}
+
 variable "aws_region" {
   description = "AWS region to deploy resources"
   type        = string
@@ -13,7 +23,7 @@ variable "environment" {
 variable "web_name" {
   description = "web_name"
   type        = string
-  default     = "personal-website"
+  default     = "charles-zh-website"
 }
 
 variable "personal_website_s3_domain_name" {
@@ -28,10 +38,6 @@ variable "domain_aliases" {
   default     = ["www", "api"]
 }
 
-variable "pw_acm_certificate_arn" {
-  description = "ACM certificate ARN for CloudFront distribution"
-  type        = string
-}
 
 variable "project_name" {
   description = "Name of the project"
@@ -72,4 +78,20 @@ variable "backup_bucket_size_threshold" {
 variable "alert_email" {
   description = "Email address for backup alerts"
   type        = string
+}
+
+variable "default_tags" {
+  description = "Default tags for all resources"
+  type        = map(string)
+  default     = {
+    Environment = "prod"
+    Project     = "personal-website"
+    ManagedBy  = "terraform"
+  }
+}
+
+variable "enable_alerts" {
+  description = "Whether to enable CloudWatch alerts"
+  type        = bool
+  default     = false  # 默认关闭告警
 }
