@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     aws = {
-      source = "hashicorp/aws"
+      source  = "hashicorp/aws"
       version = "5.59.0"
     }
   }
@@ -17,5 +17,5 @@ provider "aws" {
 
 provider "aws" {
   alias  = "backup_region"
-  region = "us-west-1"  # 或其他你想要的备份区域
+  region = "us-west-1"
 }
