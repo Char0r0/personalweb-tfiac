@@ -100,3 +100,15 @@ jobs:
             exit 1
           fi
           echo "成功触发目标仓库的workflow"
+
+  dispatch:
+    needs: terraform
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          repository: Char0r0/PersonalWeb
+          event-type: deploy-website
