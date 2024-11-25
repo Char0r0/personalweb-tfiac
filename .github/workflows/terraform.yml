@@ -78,29 +78,6 @@ jobs:
           rm -f infrastructure/lambda/backup/backup.zip
           terraform apply -auto-approve -var-file="personal_website.tfvars"
 
-      # 触发网站部署
-      - name: Trigger target repository workflow
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
-        run: |
-          response_body=$(curl -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "Content-Type: application/json" \
-            https://api.github.com/repos/Char0r0/PersonalWeb/actions/workflows/cicd.yaml/dispatches \
-            -d '{"ref":"main"}' \
-            -w "\nHTTP_STATUS:%{http_code}")
-          
-          http_status=$(echo "$response_body" | grep "HTTP_STATUS" | cut -d':' -f2)
-          
-          echo "完整响应: $response_body"
-          
-          if [ "$http_status" != "204" ]; then
-            echo "触发workflow失败. HTTP状态码: $http_status"
-            exit 1
-          fi
-          echo "成功触发目标仓库的workflow"
-
   dispatch:
     needs: terraform
     runs-on: ubuntu-latest
