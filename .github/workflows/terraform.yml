@@ -29,6 +29,19 @@ jobs:
         with:
           terraform_version: 1.5.0
 
+      - name: Prepare Lambda Code
+        run: |
+          mkdir -p infrastructure/lambda/backup
+          
+          rm -f infrastructure/lambda/backup/index.js
+          rm -f infrastructure/lambda/backup/index.py
+          rm -f infrastructure/lambda/backup/backup.zip
+          
+          chmod 644 infrastructure/lambda/backup/backup.py
+          
+          echo "Lambda 文件内容:"
+          cat infrastructure/lambda/backup/backup.py
+
       - name: Create tfvars file
         run: |
           cat > personal_website.tfvars << 'EOF'
@@ -55,18 +68,21 @@ jobs:
 
       - name: Terraform Plan
         if: github.event_name == 'pull_request'
-        run: terraform plan -var-file="personal_website.tfvars"
+        run: |
+          rm -f infrastructure/lambda/backup/backup.zip
+          terraform plan -var-file="personal_website.tfvars"
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform apply -auto-approve -var-file="personal_website.tfvars"
+        run: |
+          rm -f infrastructure/lambda/backup/backup.zip
+          terraform apply -auto-approve -var-file="personal_website.tfvars"
 
       # 触发网站部署
       - name: Trigger target repository workflow
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          # 添加更详细的错误输出
           response_body=$(curl -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
