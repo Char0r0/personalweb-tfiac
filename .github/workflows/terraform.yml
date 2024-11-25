@@ -71,11 +71,11 @@ jobs:
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -w "%{http_code}" \
             -o /dev/null \
-            https://api.github.com/repos/Char0r0/PersonalWeb/actions/workflows/cicd.yml/dispatches \
+            https://api.github.com/repos/Char0r0/PersonalWeb/actions/workflows/cicd.yaml/dispatches \
             -d '{"ref":"main"}')
           
           if [ "$response" != "204" ]; then
-            echo "触发workflow失败，HTTP状态码: $response"
+            echo "触发workflow失败.HTTP状态码: $response"
             exit 1
           fi
           echo "成功触发目标仓库的workflow"
