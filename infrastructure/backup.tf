@@ -129,10 +129,10 @@ resource "aws_iam_role" "backup_lambda_role" {
   })
 }
 
-# 添加 Lambda 的 IAM 角色策略
+# 修改 Lambda 的 IAM 角色策略
 resource "aws_iam_role_policy" "backup_lambda_policy" {
   name = "${var.project_name}-backup-lambda-policy"
-  role = aws_iam_role.backup_lambda_role.id
+  role = aws_iam_role.lambda_backup_role.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -142,7 +142,8 @@ resource "aws_iam_role_policy" "backup_lambda_policy" {
         Action = [
           "s3:GetObject",
           "s3:ListBucket",
-          "s3:PutObject"
+          "s3:PutObject",
+          "s3:GetBucketLocation"
         ]
         Resource = [
           aws_s3_bucket.personal_website.arn,

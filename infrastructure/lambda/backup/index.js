@@ -6,13 +6,11 @@ exports.handler = async (event) => {
     const sourceBucket = process.env.SOURCE_BUCKET;
     const backupBucket = process.env.BACKUP_BUCKET;
     
-    // 创建两个 S3 客户端，分别用于源桶和备份桶
-    const sourceClient = new S3Client({ 
-        region: sourceRegion
-    });
-    
-    const backupClient = new S3Client({ 
-        region: backupRegion
+    // 创建 S3 客户端，启用 useArnRegion
+    const s3Client = new S3Client({ 
+        region: sourceRegion,
+        useArnRegion: true,
+        s3UseArnRegion: true
     });
     
     try {
@@ -24,7 +22,7 @@ exports.handler = async (event) => {
         });
         
         console.log('正在获取源桶文件列表...');
-        const objects = await sourceClient.send(listCommand);
+        const objects = await s3Client.send(listCommand);
         
         if (!objects.Contents || objects.Contents.length === 0) {
             console.log('源桶为空，没有需要备份的文件');
@@ -40,28 +38,35 @@ exports.handler = async (event) => {
         for (const object of objects.Contents) {
             console.log(`正在备份: ${object.Key}`);
             
-            // 获取源对象
-            const getCommand = new GetObjectCommand({
-                Bucket: sourceBucket,
-                Key: object.Key
-            });
-            
             try {
                 // 获取源文件
-                const { Body, ContentType } = await sourceClient.send(getCommand);
+                const getCommand = new GetObjectCommand({
+                    Bucket: sourceBucket,
+                    Key: object.Key
+                });
+                
+                const { Body, ContentType } = await s3Client.send(getCommand);
+                
+                // 读取流数据
+                const chunks = [];
+                for await (const chunk of Body) {
+                    chunks.push(chunk);
+                }
+                const fileBuffer = Buffer.concat(chunks);
                 
                 // 上传到备份桶
                 const putCommand = new PutObjectCommand({
                     Bucket: backupBucket,
                     Key: object.Key,
-                    Body: Body,
-                    ContentType: ContentType
+                    Body: fileBuffer,
+                    ContentType: ContentType || 'application/octet-stream'
                 });
                 
-                await backupClient.send(putCommand);
+                await s3Client.send(putCommand);
                 console.log(`成功备份: ${object.Key}`);
             } catch (copyError) {
                 console.error(`备份文件失败 ${object.Key}:`, copyError);
+                console.error('详细错误信息:', JSON.stringify(copyError, null, 2));
                 throw copyError;
             }
         }
@@ -73,6 +78,7 @@ exports.handler = async (event) => {
         };
     } catch (error) {
         console.error('备份过程中发生错误:', error);
+        console.error('详细错误信息:', JSON.stringify(error, null, 2));
         throw error;
     }
 }; 
