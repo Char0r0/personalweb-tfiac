@@ -1,4 +1,4 @@
-const { S3Client, ListObjectsCommand, CopyObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, ListObjectsCommand, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
 
 exports.handler = async (event) => {
     const sourceRegion = process.env.SOURCE_REGION;
@@ -8,14 +8,11 @@ exports.handler = async (event) => {
     
     // 创建两个 S3 客户端，分别用于源桶和备份桶
     const sourceClient = new S3Client({ 
-        region: sourceRegion,
-        endpoint: `https://s3.${sourceRegion}.amazonaws.com`
+        region: sourceRegion
     });
     
     const backupClient = new S3Client({ 
-        region: backupRegion,
-        endpoint: `https://s3.${backupRegion}.amazonaws.com`,
-        forcePathStyle: true  // 添加这个配置
+        region: backupRegion
     });
     
     try {
@@ -42,14 +39,26 @@ exports.handler = async (event) => {
         // 对每个对象进行备份
         for (const object of objects.Contents) {
             console.log(`正在备份: ${object.Key}`);
-            const copyCommand = new CopyObjectCommand({
-                Bucket: backupBucket,
-                CopySource: encodeURIComponent(`${sourceBucket}/${object.Key}`),
+            
+            // 获取源对象
+            const getCommand = new GetObjectCommand({
+                Bucket: sourceBucket,
                 Key: object.Key
             });
             
             try {
-                await backupClient.send(copyCommand);
+                // 获取源文件
+                const { Body, ContentType } = await sourceClient.send(getCommand);
+                
+                // 上传到备份桶
+                const putCommand = new PutObjectCommand({
+                    Bucket: backupBucket,
+                    Key: object.Key,
+                    Body: Body,
+                    ContentType: ContentType
+                });
+                
+                await backupClient.send(putCommand);
                 console.log(`成功备份: ${object.Key}`);
             } catch (copyError) {
                 console.error(`备份文件失败 ${object.Key}:`, copyError);
