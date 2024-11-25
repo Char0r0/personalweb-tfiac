@@ -62,10 +62,12 @@ jobs:
         run: terraform apply -auto-approve -var-file="personal_website.tfvars"
 
       # 触发网站部署
-      - name: Trigger Website Deployment
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: peter-evans/repository-dispatch@v2
-        with:
-          token: ${{ secrets.PAT_TOKEN }}
-          repository: Char0r0/PersonalWeb
-          event-type: trigger-deploy
+      - name: Trigger target repository workflow
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          curl -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            https://api.github.com/repos/Char0r0/PersonalWeb/actions/workflows/cicd.yml/dispatches \
+            -d '{"ref":"main"}'
