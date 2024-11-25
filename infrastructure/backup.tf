@@ -80,6 +80,8 @@ resource "aws_lambda_function" "backup" {
     variables = {
       SOURCE_BUCKET = aws_s3_bucket.personal_website.id
       BACKUP_BUCKET = aws_s3_bucket.backup.id
+      SOURCE_REGION = var.aws_region
+      BACKUP_REGION = "us-west-1"
     }
   }
 }
