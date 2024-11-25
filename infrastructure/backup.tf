@@ -75,13 +75,14 @@ resource "aws_lambda_function" "backup" {
   handler         = "index.handler"
   runtime         = "nodejs18.x"
   timeout         = 300
+  memory_size     = 256  # 增加内存
 
   environment {
     variables = {
       SOURCE_BUCKET = aws_s3_bucket.personal_website.id
       BACKUP_BUCKET = aws_s3_bucket.backup.id
       SOURCE_REGION = var.aws_region
-      BACKUP_REGION = "us-west-1"
+      BACKUP_REGION = var.backup_region  # 使用变量
     }
   }
 }
