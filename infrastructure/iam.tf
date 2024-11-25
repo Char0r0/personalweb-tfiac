@@ -107,4 +107,65 @@ resource "aws_iam_role_policy" "website_deployment_policy" {
       }
     ]
   })
+}
+
+# Lambda 备份角色
+resource "aws_iam_role" "lambda_backup_role" {
+  name = "${var.project_name}-lambda-backup-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+# Lambda 备份策略
+resource "aws_iam_role_policy" "lambda_backup_policy" {
+  name = "${var.project_name}-lambda-backup-policy"
+  role = aws_iam_role.lambda_backup_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:ListBucket",
+          "s3:GetObject"
+        ]
+        Resource = [
+          aws_s3_bucket.website.arn,
+          "${aws_s3_bucket.website.arn}/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:PutObjectAcl"
+        ]
+        Resource = [
+          aws_s3_bucket.backup.arn,
+          "${aws_s3_bucket.backup.arn}/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:*:*:*"
+      }
+    ]
+  })
 } 

@@ -45,29 +45,67 @@ resource "aws_lambda_permission" "allow_s3" {
   source_arn    = aws_s3_bucket.personal_website.arn
 }
 
-# 添加 Lambda 函数定义
+# EventBridge 规则触发 Lambda
+resource "aws_cloudwatch_event_rule" "backup_trigger" {
+  name                = "${var.project_name}-backup-trigger"
+  description         = "每天触发备份"
+  schedule_expression = "cron(0 0 * * ? *)"  # 每天午夜触发
+}
+
+resource "aws_cloudwatch_event_target" "backup_lambda" {
+  rule      = aws_cloudwatch_event_rule.backup_trigger.name
+  target_id = "BackupLambda"
+  arn       = aws_lambda_function.backup.arn
+}
+
+# Lambda 权限
+resource "aws_lambda_permission" "allow_eventbridge" {
+  statement_id  = "AllowEventBridgeInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.backup.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.backup_trigger.arn
+}
+
+# Lambda 函数
 resource "aws_lambda_function" "backup" {
   filename         = data.archive_file.backup_lambda.output_path
   function_name    = "${var.project_name}-backup"
-  role            = aws_iam_role.backup_lambda_role.arn
+  role            = aws_iam_role.lambda_backup_role.arn
   handler         = "index.handler"
   runtime         = "nodejs18.x"
   timeout         = 300
 
   environment {
     variables = {
-      SOURCE_REGION = var.aws_region
-      SOURCE_BUCKET = aws_s3_bucket.personal_website.id
+      SOURCE_BUCKET = aws_s3_bucket.website.id
       BACKUP_BUCKET = aws_s3_bucket.backup.id
     }
   }
 }
 
-# 添加 Lambda 代码打包
+# Lambda 代码打包
 data "archive_file" "backup_lambda" {
   type        = "zip"
   source_dir  = "${path.module}/lambda/backup"
-  output_path = "${path.module}/lambda/backup.zip"
+  output_path = "${path.module}/lambda/backup/backup.zip"
+
+  depends_on = [null_resource.install_lambda_dependencies]
+}
+
+# 安装 Lambda 依赖
+resource "null_resource" "install_lambda_dependencies" {
+  triggers = {
+    always_run = "${timestamp()}"  # 每次都运行
+  }
+
+  provisioner "local-exec" {
+    command = <<EOF
+      cd ${path.module}/lambda/backup
+      npm init -y
+      npm install @aws-sdk/client-s3
+    EOF
+  }
 }
 
 # 添加 Lambda 的 IAM 角色
