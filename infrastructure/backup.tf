@@ -95,6 +95,14 @@ resource "aws_lambda_permission" "allow_eventbridge" {
   source_arn    = aws_cloudwatch_event_rule.backup_trigger.arn
 }
 
+# Lambda 代码打包
+data "archive_file" "backup_lambda" {
+  type        = "zip"
+  source_dir  = "${path.module}/lambda/backup"
+  output_path = "${path.module}/lambda/backup/backup.zip"
+  excludes    = ["backup.zip"]
+}
+
 # Lambda 函数
 resource "aws_lambda_function" "backup" {
   filename         = data.archive_file.backup_lambda.output_path
@@ -111,13 +119,6 @@ resource "aws_lambda_function" "backup" {
       BACKUP_BUCKET = aws_s3_bucket.backup.id
     }
   }
-}
-
-# Lambda 代码打包
-data "archive_file" "backup_lambda" {
-  type        = "zip"
-  source_file = "${path.module}/lambda/backup/backup.py"
-  output_path = "${path.module}/lambda/backup/backup.zip"
 }
 
 # 添加 Lambda 的 IAM 角色
