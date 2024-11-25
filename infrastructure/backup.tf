@@ -100,7 +100,7 @@ resource "aws_lambda_function" "backup" {
   filename         = data.archive_file.backup_lambda.output_path
   function_name    = "${var.project_name}-backup"
   role            = aws_iam_role.lambda_backup_role.arn
-  handler         = "index.lambda_handler"
+  handler         = "backup.lambda_handler"
   runtime         = "python3.9"
   timeout         = 900
   memory_size     = 1024
@@ -116,7 +116,7 @@ resource "aws_lambda_function" "backup" {
 # Lambda 代码打包
 data "archive_file" "backup_lambda" {
   type        = "zip"
-  source_file = "${path.module}/lambda/backup/index.py"
+  source_file = "${path.module}/lambda/backup/backup.py"
   output_path = "${path.module}/lambda/backup/backup.zip"
 }
 
