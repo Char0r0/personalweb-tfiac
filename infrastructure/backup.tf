@@ -95,6 +95,7 @@ resource "aws_lambda_permission" "allow_eventbridge" {
   source_arn    = aws_cloudwatch_event_rule.backup_trigger.arn
 }
 
+
 # Lambda 代码打包
 data "archive_file" "backup_lambda" {
   type        = "zip"
