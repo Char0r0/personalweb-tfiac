@@ -9,6 +9,34 @@ resource "aws_s3_bucket" "backup" {
   }
 }
 
+# 允许跨区域访问的桶策略
+resource "aws_s3_bucket_policy" "backup" {
+  provider = aws.backup_region
+  bucket   = aws_s3_bucket.backup.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowCrossRegionAccess"
+        Effect = "Allow"
+        Principal = {
+          AWS = aws_iam_role.lambda_backup_role.arn
+        }
+        Action = [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          aws_s3_bucket.backup.arn,
+          "${aws_s3_bucket.backup.arn}/*"
+        ]
+      }
+    ]
+  })
+}
+
 # 备份生命周期规则
 resource "aws_s3_bucket_lifecycle_configuration" "backup" {
   provider = aws.backup_region
@@ -72,8 +100,8 @@ resource "aws_lambda_function" "backup" {
   filename         = data.archive_file.backup_lambda.output_path
   function_name    = "${var.project_name}-backup"
   role            = aws_iam_role.lambda_backup_role.arn
-  handler         = "index.handler"
-  runtime         = "nodejs18.x"
+  handler         = "index.lambda_handler"
+  runtime         = "python3.9"
   timeout         = 900
   memory_size     = 1024
 
@@ -81,8 +109,6 @@ resource "aws_lambda_function" "backup" {
     variables = {
       SOURCE_BUCKET = aws_s3_bucket.personal_website.id
       BACKUP_BUCKET = aws_s3_bucket.backup.id
-      SOURCE_REGION = var.aws_region
-      BACKUP_REGION = var.backup_region
     }
   }
 }
@@ -90,25 +116,8 @@ resource "aws_lambda_function" "backup" {
 # Lambda 代码打包
 data "archive_file" "backup_lambda" {
   type        = "zip"
-  source_dir  = "${path.module}/lambda/backup"
+  source_file = "${path.module}/lambda/backup/index.py"
   output_path = "${path.module}/lambda/backup/backup.zip"
-
-  depends_on = [null_resource.install_lambda_dependencies]
-}
-
-# 安装 Lambda 依赖
-resource "null_resource" "install_lambda_dependencies" {
-  triggers = {
-    always_run = "${timestamp()}"  # 每次都运行
-  }
-
-  provisioner "local-exec" {
-    command = <<EOF
-      cd ${path.module}/lambda/backup
-      npm init -y
-      npm install @aws-sdk/client-s3
-    EOF
-  }
 }
 
 # 添加 Lambda 的 IAM 角色
