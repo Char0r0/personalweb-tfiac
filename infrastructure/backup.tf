@@ -58,7 +58,10 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
 
   lambda_function {
     lambda_function_arn = aws_lambda_function.backup.arn
-    events              = ["s3:ObjectCreated:*", "s3:ObjectRemoved:*"]
+    events = [
+      "s3:ObjectCreated:*",  # 创建或更新文件时触发
+      "s3:ObjectRemoved:*"   # 删除文件时触发
+    ]
   }
 
   depends_on = [aws_lambda_permission.allow_s3]
@@ -99,9 +102,8 @@ resource "aws_lambda_permission" "allow_eventbridge" {
 # Lambda 代码打包
 data "archive_file" "backup_lambda" {
   type        = "zip"
-  source_dir  = "${path.module}/lambda/backup"
+  source_file = "${path.module}/lambda/backup/index.py"
   output_path = "${path.module}/lambda/backup/backup.zip"
-  excludes    = ["backup.zip"]
 }
 
 # Lambda 函数
@@ -109,10 +111,10 @@ resource "aws_lambda_function" "backup" {
   filename         = data.archive_file.backup_lambda.output_path
   function_name    = "${var.project_name}-backup"
   role            = aws_iam_role.lambda_backup_role.arn
-  handler         = "backup.lambda_handler"
+  handler         = "index.lambda_handler"
   runtime         = "python3.9"
-  timeout         = 900
-  memory_size     = 1024
+  timeout         = 300
+  memory_size     = 256
 
   environment {
     variables = {
