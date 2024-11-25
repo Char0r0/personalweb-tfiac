@@ -3,54 +3,54 @@ import boto3
 from datetime import datetime
 
 def lambda_handler(event, context):
-    # 初始化 S3 客户端
+    # Initialize S3 client
     s3 = boto3.client('s3')
     
-    # 从环境变量获取桶名
+    # Get bucket names from environment variables
     source_bucket = os.environ['SOURCE_BUCKET']
     backup_bucket = os.environ['BACKUP_BUCKET']
     
     try:
-        print(f"开始从 {source_bucket} 复制文件到 {backup_bucket}")
+        print(f"Starting to copy files from {source_bucket} to {backup_bucket}")
         
-        # 列出源桶中的所有对象
+        # List all objects in source bucket
         paginator = s3.get_paginator('list_objects_v2')
         total_files = 0
         copied_files = 0
         
-        # 使用分页器处理大量文件
+        # Use paginator to handle large number of files
         for page in paginator.paginate(Bucket=source_bucket):
             if 'Contents' not in page:
-                print("源桶为空")
+                print("Source bucket is empty")
                 return {
                     'statusCode': 200,
-                    'body': '源桶为空，无需备份'
+                    'body': 'Source bucket is empty, no backup needed'
                 }
             
             total_files += len(page['Contents'])
             
-            # 复制每个文件
+            # Copy each file
             for obj in page['Contents']:
                 source_key = obj['Key']
                 
                 try:
-                    # 检查目标桶中是否已存在相同的文件
+                    # Check if file already exists in destination bucket
                     try:
                         dest_obj = s3.head_object(
                             Bucket=backup_bucket,
                             Key=source_key
                         )
-                        # 如果文件存在且 ETag 相同，跳过复制
+                        # Skip if file exists and ETag matches
                         if dest_obj['ETag'] == obj['ETag']:
-                            print(f"文件已存在且内容相同，跳过: {source_key}")
+                            print(f"File exists and content matches, skipping: {source_key}")
                             copied_files += 1
                             continue
                     except s3.exceptions.ClientError as e:
                         if e.response['Error']['Code'] != '404':
                             raise e
                     
-                    # 复制文件
-                    print(f"正在复制: {source_key}")
+                    # Copy file
+                    print(f"Copying: {source_key}")
                     s3.copy_object(
                         Bucket=backup_bucket,
                         CopySource={
@@ -58,42 +58,42 @@ def lambda_handler(event, context):
                             'Key': source_key
                         },
                         Key=source_key,
-                        MetadataDirective='COPY'  # 保留所有元数据
+                        MetadataDirective='COPY'  # Preserve all metadata
                     )
                     copied_files += 1
-                    print(f"成功复制: {source_key}")
+                    print(f"Successfully copied: {source_key}")
                     
                 except Exception as e:
-                    print(f"复制文件 {source_key} 时出错: {str(e)}")
+                    print(f"Error copying file {source_key}: {str(e)}")
                     raise e
         
-        # 检查备份桶中多余的文件
+        # Check for extra files in backup bucket
         for page in paginator.paginate(Bucket=backup_bucket):
             if 'Contents' in page:
                 for obj in page['Contents']:
                     backup_key = obj['Key']
                     try:
-                        # 检查源桶是否存在此文件
+                        # Check if file exists in source bucket
                         s3.head_object(
                             Bucket=source_bucket,
                             Key=backup_key
                         )
                     except s3.exceptions.ClientError as e:
                         if e.response['Error']['Code'] == '404':
-                            # 如果源桶没有这个文件，从备份桶删除
-                            print(f"删除备份桶中多余的文件: {backup_key}")
+                            # Delete from backup bucket if not in source
+                            print(f"Deleting extra file from backup bucket: {backup_key}")
                             s3.delete_object(
                                 Bucket=backup_bucket,
                                 Key=backup_key
                             )
         
-        print(f"备份完成! 总共处理 {total_files} 个文件，成功复制 {copied_files} 个文件")
+        print(f"Backup complete! Processed {total_files} files, successfully copied {copied_files} files")
         
         return {
             'statusCode': 200,
-            'body': f'备份完成! 总共处理 {total_files} 个文件，成功复制 {copied_files} 个文件'
+            'body': f'Backup complete! Processed {total_files} files, successfully copied {copied_files} files'
         }
         
     except Exception as e:
-        print(f"备份过程中发生错误: {str(e)}")
+        print(f"Error during backup process: {str(e)}")
         raise e 

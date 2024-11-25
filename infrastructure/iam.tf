@@ -1,4 +1,4 @@
-# 添加数据源
+# Add data source
 data "aws_caller_identity" "current" {}
 
 # Create IAM user
@@ -109,7 +109,7 @@ resource "aws_iam_role_policy" "website_deployment_policy" {
   })
 }
 
-# Lambda 备份角色
+# Lambda backup role
 resource "aws_iam_role" "lambda_backup_role" {
   name = "${var.project_name}-lambda-backup-role"
 
@@ -127,7 +127,7 @@ resource "aws_iam_role" "lambda_backup_role" {
   })
 }
 
-# Lambda 备份策略
+# Lambda backup policy
 resource "aws_iam_role_policy" "lambda_backup_policy" {
   name = "${var.project_name}-lambda-backup-policy"
   role = aws_iam_role.lambda_backup_role.id

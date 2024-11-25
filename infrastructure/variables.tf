@@ -15,29 +15,28 @@ variable "aws_region" {
 }
 
 variable "environment" {
-  description = "environment name"
+  description = "Environment name"
   type        = string
   default     = "prod"
 }
 
 variable "web_name" {
-  description = "web_name"
+  description = "Website name for resource identification"
   type        = string
   default     = "charles-zh-website"
 }
 
 variable "personal_website_s3_domain_name" {
-  description = "domain name"
+  description = "Primary domain name for the website"
   type        = string
   default     = "charles-zh.com"
 }
 
 variable "domain_aliases" {
-  description = "domain aliases"
+  description = "List of subdomains (e.g., www, api)"
   type        = list(string)
   default     = ["www", "api"]
 }
-
 
 variable "project_name" {
   description = "Name of the project"
@@ -66,13 +65,13 @@ variable "backup_region" {
 variable "backup_schedule" {
   description = "Cron expression for backup schedule"
   type        = string
-  default     = "cron(0 0 * * ? *)"  # 每天午夜
+  default     = "cron(0 0 * * ? *)"  # Runs daily at midnight
 }
 
 variable "backup_bucket_size_threshold" {
   description = "Threshold for backup bucket size alarm (bytes)"
   type        = number
-  default     = 5368709120  # 5GB
+  default     = 5368709120  # 5GB in bytes
 }
 
 variable "alert_email" {
@@ -93,5 +92,5 @@ variable "default_tags" {
 variable "enable_alerts" {
   description = "Whether to enable CloudWatch alerts"
   type        = bool
-  default     = false  # 默认关闭告警
+  default     = false  # Alerts disabled by default
 }
