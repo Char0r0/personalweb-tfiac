@@ -78,7 +78,7 @@ resource "aws_lambda_function" "backup" {
 
   environment {
     variables = {
-      SOURCE_BUCKET = aws_s3_bucket.website.id
+      SOURCE_BUCKET = aws_s3_bucket.personal_website.id
       BACKUP_BUCKET = aws_s3_bucket.backup.id
     }
   }

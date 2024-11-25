@@ -138,21 +138,13 @@ resource "aws_iam_role_policy" "lambda_backup_policy" {
       {
         Effect = "Allow"
         Action = [
+          "s3:GetObject",
           "s3:ListBucket",
-          "s3:GetObject"
+          "s3:PutObject"
         ]
         Resource = [
-          aws_s3_bucket.website.arn,
-          "${aws_s3_bucket.website.arn}/*"
-        ]
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:PutObject",
-          "s3:PutObjectAcl"
-        ]
-        Resource = [
+          aws_s3_bucket.personal_website.arn,
+          "${aws_s3_bucket.personal_website.arn}/*",
           aws_s3_bucket.backup.arn,
           "${aws_s3_bucket.backup.arn}/*"
         ]
